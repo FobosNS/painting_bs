@@ -1,0 +1,787 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Base Station Visualization (BETA 1.6)</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="js/leaflet-image.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        #exportBtn {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 999;
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+            #exportBtn:disabled {
+                background: #ccc;
+                cursor: not-allowed;
+            }
+
+        #map {
+            height: 90vh; /* Увеличиваем карту до 70% высоты экрана */
+            width: 100%;
+        }
+
+        #popup {
+            position: absolute;
+            background: white;
+            max-width: 90%;
+            margin: auto;
+            padding: 5%;
+            border: 1px solid #ccc;
+            display: none;
+            z-index: 1000;
+        }
+
+        button {
+            font-size: 1rem;
+            padding: 10px;
+            margin: 10px;
+        }
+
+        .meteo-informer__cell-description,
+        .meteo-informer__cell-icon,
+        .meteo-informer__cell-info,
+        .meteo-informer__cell-logo,
+        .meteo-informer__cell-specification {
+            border-bottom-color: #FFC107;
+        }
+
+        #popup {
+            position: fixed; /* Позиционирование для размещения поверх других элементов */
+            top: 70%; /* Центрирование по вертикали */
+            left: 10%; /* Центрирование по горизонтали */
+            transform: translate(-50%, -50%); /* Сдвиг для точного центрирования */
+            width: 40%; /* Ширина по умолчанию — 90% от ширины экрана */
+            max-width: 400px; /* Максимальная ширина для больших экранов */
+            background-color: white; /* Цвет фона */
+            padding: 16px; /* Внутренние отступы */
+            border: 1px solid #ccc; /* Рамка */
+            border-radius: 8px; /* Закругленные углы */
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2); /* Тень для блока */
+            z-index: 1000; /* Отображение поверх других элементов */
+            box-sizing: border-box; /* Учитывать отступы внутри ширины */
+            display: block; /* Скрыть по умолчанию */
+            overflow: auto;
+        }
+
+        /* Media query для маленьких экранов */
+        @media (max-width: 768px) {
+            #popup {
+                width: 95%; /* Увеличиваем ширину для маленьких экранов */
+                max-width: none; /* Убираем ограничение по ширине */
+                top: 55%; /* Сдвигаем чуть ниже для удобства */
+                padding: 12px; /* Уменьшаем отступы */
+            }
+        }
+
+        @media (max-width: 480px) {
+            #popup {
+                width: 100%; /* Блок занимает всю ширину экрана */
+                padding: 8px; /* Еще меньше отступы */
+            }
+        }
+
+        #tw_8_1653716743 {
+            position: fixed; /* Виджет фиксирован наверху */
+            top: 0; /* Расстояние от верхнего края */
+            right: 0; /* Расстояние от правого края */
+            z-index: 9999; /* Установлен высокий приоритет */
+            width: 200px; /* Устанавливаем ширину виджета */
+            height: 150px; /* Устанавливаем высоту виджета */
+            overflow: hidden; /* Скрываем лишнее содержимое, если оно выходит за границы */
+            box-sizing: border-box; /* Учитываем внутренние отступы в ширине и высоте */
+        }
+
+            #tw_8_1653716743 > div {
+                width: 100%; /* Увеличиваем содержимое до 100% ширины контейнера */
+                height: 100%; /* Увеличиваем содержимое до 100% высоты контейнера */
+            }
+
+        #uploadButton {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+        }
+
+            #uploadButton:hover {
+                background-color: #0056b3;
+            }
+
+        #uploadStatus {
+            position: fixed;
+            bottom: 70px;
+            right: 20px;
+            font-size: 14px;
+            color: #555;
+        }
+
+    </style>
+</head>
+
+<body>
+
+    <h2>Base Station Visualization (BETA 1.6) by FobosNS</h2>
+
+    <div id="map"></div>
+    <button id="exportBtn" onclick="exportMapAsPNG()" disabled>Export Map as PNG</button>
+
+
+    <!-- Popup for input -->
+    <div id="popup">
+        <h3>Введите параметры базовой станции</h3>
+        <form id="baseStationForm">
+            <!-- Поля поиска базовой станции -->
+            <label for="lacCidInput">LAC CID (разделитель: пробел, табуляция, можно в столбик):</label><br>
+            <textarea id="lacCidInput" placeholder="Введите LAC и CID" rows="5" style="width: 100%;"></textarea><br><br>
+
+            <button type="button" onclick="searchBaseStation()">Search Base Station</button>
+            <hr>
+
+            <!-- Поля для ввода параметров базовой станции -->
+            <label for="azimuth">Азимут (°): </label>
+            <input type="number" id="azimuth" value="0"><br><br>
+            <label for="radius">Радиус покрытия (m): </label>
+            <input type="number" id="radius" value="2000"><br><br>
+            <label for="sectorWidth">Ширина сектора (°): </label>
+            <input type="number" id="sectorWidth" value="100"><br><br>
+
+            <!-- Выбор цвета сектора -->
+            <label for="sectorColor">Цвет сектора: </label>
+            <input type="color" id="sectorColor" value="#0000ff"><br><br>
+
+            <!-- Предустановленные цвета -->
+            <div id="colorPalette">
+                <label>Выберите предопределенный цвет:</label><br>
+                <button type="button" class="color-option" data-color="#ff0000" style="background-color: #ff0000;"></button>
+                <button type="button" class="color-option" data-color="#00ff00" style="background-color: #00ff00;"></button>
+                <button type="button" class="color-option" data-color="#0000ff" style="background-color: #0000ff;"></button>
+                <button type="button" class="color-option" data-color="#ffff00" style="background-color: #ffff00;"></button>
+                <button type="button" class="color-option" data-color="#ff00ff" style="background-color: #ff00ff;"></button>
+                <button type="button" class="color-option" data-color="#00ffff" style="background-color: #00ffff;"></button>
+                <button type="button" class="color-option" data-color="#808080" style="background-color: #808080;"></button>
+            </div><br><br>
+
+            <!-- Кнопки действия -->
+            <button type="button" onclick="createBaseStation()">Создать базовую станцию</button>
+            <button type="button" onclick="closePopup()">Отмена</button>
+        </form>
+    </div>
+
+    <!-- File Upload Section -->
+    <form id="uploadForm" enctype="multipart/form-data">
+        <input type="file" id="fileInput" name="file" style="display: none;" />
+        <button type="button" id="uploadButton" onclick="document.getElementById('fileInput').click()">Загрузить список БС в БД</button>
+        <div id="uploadStatus" style="margin-top: 10px; font-size: 14px; color: #555;"></div>
+    </form>
+
+    <script>
+        // Initialize the map
+        var map = L.map('map').setView([50.4501, 30.5234], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+        var currentLat, currentLon;
+
+        // Arrays to store all markers and sectors
+        var baseStationMarkers = [];
+        var sectorPolygons = [];
+
+        // Temporary markers and polygons for preview
+        var temporaryMarker, temporaryPolygon;
+
+        // Open popup for base station parameters when clicking the map
+        map.on('contextmenu', function (e) {
+            currentLat = e.latlng.lat;
+            currentLon = e.latlng.lng;
+            document.getElementById('popup').style.display = 'block';
+
+            // Remove previous temporary markers and polygons
+            if (temporaryMarker) map.removeLayer(temporaryMarker);
+            if (temporaryPolygon) map.removeLayer(temporaryPolygon);
+
+            // Add a temporary marker for preview
+            temporaryMarker = L.marker([currentLat, currentLon]).addTo(map).bindPopup("Предварительная БС").openPopup();
+
+            // Create temporary sector preview
+            updateSector();
+        });
+
+        // Close the popup
+        function closePopup() {
+            document.getElementById('popup').style.display = 'none';
+        }
+
+        // Update the sector preview
+        function updateSector() {
+            var azimuth = parseFloat(document.getElementById('azimuth').value);
+            var radius = parseFloat(document.getElementById('radius').value);
+            var sectorWidth = parseFloat(document.getElementById('sectorWidth').value);
+
+            // Remove the previous temporary sector if it exists
+            if (temporaryPolygon) map.removeLayer(temporaryPolygon);
+
+            // Calculate points for sector coverage
+            var azimuthStart = azimuth - (sectorWidth / 2);  // Start angle of the sector
+            var azimuthEnd = azimuth + (sectorWidth / 2);    // End angle of the sector
+            var points = [];
+
+            for (var angle = azimuthStart; angle <= azimuthEnd; angle++) {
+                var latOffset = currentLat + (radius / 111111) * Math.cos(Math.radians(angle));
+                var lonOffset = currentLon + (radius / (111111 * Math.cos(Math.radians(currentLat)))) * Math.sin(Math.radians(angle));
+                points.push([latOffset, lonOffset]);
+            }
+
+            points.unshift([currentLat, currentLon]);  // Start at the center
+            temporaryPolygon = L.polygon(points, { color: 'orange', fill: true, fillOpacity: 0.3 }).addTo(map);
+        }
+
+        // Массив для хранения базовых станций с их описанием
+        var baseStations = [];
+
+        // Create base station on the map
+        function createBaseStation() {
+            var azimuth = parseFloat(document.getElementById('azimuth').value);
+            var radius = parseFloat(document.getElementById('radius').value);
+            var sectorWidth = parseFloat(document.getElementById('sectorWidth').value);
+            var sectorColor = document.getElementById('sectorColor').value; // Get HEX color
+
+            if (isNaN(azimuth) || isNaN(radius) || isNaN(sectorWidth)) {
+                alert("Please enter valid values for azimuth, radius, and sector width.");
+                return;
+            }
+
+            // Add actual marker for the base station
+            var baseStationMarker = L.marker([currentLat, currentLon]).addTo(map).bindPopup("Base Station").openPopup();
+            baseStationMarkers.push(baseStationMarker); // Store the marker
+
+            // Calculate points for sector coverage
+            var azimuthStart = azimuth - (sectorWidth / 2); // Start angle of the sector
+            var azimuthEnd = azimuth + (sectorWidth / 2); // End angle of the sector
+            var points = [];
+
+            for (var angle = azimuthStart; angle <= azimuthEnd; angle++) {
+                var latOffset = currentLat + (radius / 111111) * Math.cos(Math.radians(angle));
+                var lonOffset = currentLon + (radius / (111111 * Math.cos(Math.radians(currentLat)))) * Math.sin(Math.radians(angle));
+                points.push([latOffset, lonOffset]);
+            }
+
+            // Add sector polygon
+            points.unshift([currentLat, currentLon]); // Start at the center
+            var sectorPolygon = L.polygon(points, { color: sectorColor, fill: true, fillOpacity: 0.4 }).addTo(map);
+            sectorPolygons.push(sectorPolygon); // Store the sector
+
+
+            // Remove Temporary Base Station marker and sector
+            if (temporaryMarker) {
+                map.removeLayer(temporaryMarker);
+                temporaryMarker = null; // Clear the reference
+            }
+            if (temporaryPolygon) {
+                map.removeLayer(temporaryPolygon);
+                temporaryPolygon = null; // Clear the reference
+            }
+
+            // Allow removing base station by right-clicking the marker
+            baseStationMarker.on('contextmenu', function () {
+                removeBaseStation(baseStationMarker, sectorPolygon);
+            });
+
+            closePopup(); // Close the popup after creating the station
+        }
+
+        // Function to remove base station (marker and sector polygon)
+        function removeBaseStation(marker, polygon) {
+            // Remove the marker and sector from the map and arrays
+            map.removeLayer(marker);
+            map.removeLayer(polygon);
+
+            // Remove from arrays
+            var markerIndex = baseStationMarkers.indexOf(marker);
+            if (markerIndex > -1) {
+                baseStationMarkers.splice(markerIndex, 1);
+            }
+
+            var polygonIndex = sectorPolygons.indexOf(polygon);
+            if (polygonIndex > -1) {
+                sectorPolygons.splice(polygonIndex, 1);
+            }
+
+            alert("Базовая станция удалена с карты!");
+        }
+
+
+        // Adding radians function to Math
+        Math.radians = function (degrees) {
+            return degrees * Math.PI / 180;
+        };
+
+        // Add event listeners to predefined color buttons
+        document.querySelectorAll('.color-option').forEach(function (button) {
+            button.addEventListener('click', function () {
+                const selectedColor = button.getAttribute('data-color');
+                document.getElementById('sectorColor').value = selectedColor; // Устанавливаем значение в поле цвета
+            });
+        });
+
+        // Enable the export button when the map is ready
+        map.whenReady(function () {
+            document.getElementById('exportBtn').disabled = false;
+        });
+
+        function exportMapAsPNG() {
+            console.log("Starting map export...");
+            leafletImage(map, function (err, canvas) {
+                if (err) {
+                    console.error("Error generating map image:", err);
+                    return;
+                }
+                console.log("Canvas successfully created.");
+
+                // Convert canvas to Blob
+                canvas.toBlob(function (blob) {
+                    console.log("Blob successfully created.");
+
+                    // Create a link for downloading
+                    var link = document.createElement("a");
+                    link.href = URL.createObjectURL(blob);
+                    link.download = "map.png";
+
+                    // Simulate a click to download the file
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(link.href);
+
+                    console.log("Map exported and downloaded successfully.");
+                }, "image/png");
+            });
+        }
+
+        // Функция для отображения базовых станций
+        function loadStations() {
+            fetch('/map-data')
+                .then(response => response.json())
+                .then(data => {
+                    data.forEach(station => {
+                        const { latitude, longitude, lac, cid, operator, network_type, azimuth, bs } = station;
+                        if (latitude && longitude) {
+                            const popupContent = `
+                                            <strong>Base Station:</strong><br>
+                                            LAC: ${lac}<br>
+                                            CID: ${cid}<br>
+                                            Operator: ${operator}<br>
+                                            Network: ${network_type}<br>
+                                            Azimuth: ${azimuth}<br>
+                                            BS: ${bs}
+                                        `;
+                            L.marker([latitude, longitude])
+                                .addTo(map)
+                                .bindPopup(popupContent);
+                        }
+                    });
+                })
+                .catch(error => console.error('Error loading stations:', error));
+        }
+
+        // Загружаем станции при готовности карты
+        map.whenReady(loadStations);
+
+        // Object to track added stations by coordinates
+        const addedStations = {};
+
+        // Function to search base stations by a list of LAC and CID
+        async function searchBaseStation() {
+            const input = document.getElementById('lacCidInput').value;
+
+            if (!input.trim()) {
+                alert("Введите значения LAC и CID!");
+                return;
+            }
+
+            // Split input into lines and process each line
+            const lines = input.split('\n').map(line => line.trim()).filter(line => line);
+
+            // Count occurrences of each unique line (lac cid pair)
+            const lineCounts = {};
+            lines.forEach(line => {
+                lineCounts[line] = (lineCounts[line] || 0) + 1;
+            });
+
+            for (const [line, count] of Object.entries(lineCounts)) {
+                const [lac, cid] = line.split(/\s+/); // Split by space, tab, or other separators
+
+                if (!lac || !cid) {
+                    alert(`Некорректная строка: "${line}". Убедитесь, что вводите LAC и CID через пробел или табуляцию.`);
+                    continue;
+                }
+
+                try {
+                    const response = await fetch(`/api/station?lac=${lac}&cid=${cid}`);
+                    if (!response.ok) {
+                        console.warn(`LAC: ${lac}, CID: ${cid} не найдены.`);
+                        continue;
+                    }
+
+                    const data = await response.json();
+                    data.repeatCount = count; // Attach repeat count from input
+                    handleBaseStationData(data);
+                } catch (error) {
+                    console.error("Error fetching base station:", error);
+                    alert("Ошибка поиска базовой станции.");
+                }
+            }
+        }
+
+        // Function to handle base station data and add/update marker
+        function handleBaseStationData(data) {
+            if (!data.latitude || !data.longitude) {
+                alert("Координаты базовой станции не найдены.");
+                return;
+            }
+
+            const lat = data.latitude;
+            const lon = data.longitude;
+            const stationKey = `${lat}_${lon}`;
+
+            // Check if a marker already exists at these coordinates
+            if (addedStations[stationKey]) {
+                const existingStation = addedStations[stationKey];
+
+                // Проверяем, уникальна ли комбинация LAC и CID
+                const isDuplicate = existingStation.stations.some(
+                    station => station.lac === data.lac && station.cid === data.cid
+                );
+
+                if (!isDuplicate) {
+                    existingStation.stations.push(data); // Add new station info
+                    drawAzimuthSector(data, existingStation.sectors); // Draw azimuth sector
+                } else {
+                    // Update repeat count for existing LAC and CID
+                    const existingData = existingStation.stations.find(
+                        station => station.lac === data.lac && station.cid === data.cid
+                    );
+                    existingData.repeatCount += data.repeatCount;
+                }
+
+                // Update popup with the new data
+                updateStationPopup(existingStation);
+                return;
+            }
+
+            // Create a new marker and azimuth sector
+            const marker = L.marker([lat, lon]).addTo(map);
+
+            addedStations[stationKey] = {
+                marker,
+                sectors: [],
+                stations: [data],
+            };
+
+            drawAzimuthSector(data, addedStations[stationKey].sectors);
+            updateStationPopup(addedStations[stationKey]);
+
+            // Add right-click event listener for deleting the marker and its sectors
+            marker.on('contextmenu', function () {
+                if (confirm("Вы уверены, что хотите удалить эту базовую станцию?")) {
+                    map.removeLayer(marker);
+                    addedStations[stationKey].sectors.forEach(sector => map.removeLayer(sector));
+                    delete addedStations[stationKey];
+                }
+            });
+        }
+
+        // Function to draw an azimuth sector
+        function drawAzimuthSector(data, sectors, station) {
+            const lat = data.latitude;
+            const lon = data.longitude;
+            const azimuth = parseFloat(data.azimuth) || parseFloat(document.getElementById('azimuth').value) || 0;
+            const radius = parseFloat(document.getElementById('radius').value) || 2000; // Coverage radius
+            const sectorWidth = parseFloat(document.getElementById('sectorWidth').value) || 100; // Sector width
+            const sectorColor = data.sectorColor || document.getElementById('sectorColor').value || "#0000ff"; // Sector color
+
+            // Calculate points for the sector
+            const azimuthStart = azimuth - sectorWidth / 2;
+            const azimuthEnd = azimuth + sectorWidth / 2;
+            const points = [];
+
+            for (let angle = azimuthStart; angle <= azimuthEnd; angle++) {
+                const latOffset = lat + (radius / 111111) * Math.cos((angle * Math.PI) / 180);
+                const lonOffset = lon + (radius / (111111 * Math.cos((lat * Math.PI) / 180))) * Math.sin((angle * Math.PI) / 180);
+                points.push([latOffset, lonOffset]);
+            }
+
+            points.unshift([lat, lon]); // Center of the base station
+            const sectorPolygon = L.polygon(points, {
+                color: sectorColor,
+                fill: true,
+                fillOpacity: 0.4,
+            }).addTo(map);
+
+            // Add click event to open the marker's popup
+            sectorPolygon.on('click', () => {
+                if (station.marker.isPopupOpen()) {
+                    station.marker.closePopup();
+                }
+                station.marker.openPopup();
+            });
+
+            sectors.push(sectorPolygon);
+        }
+
+        // Function to update the popup content for a marker
+        function updateStationPopup(station) {
+            const stationData = station.stations.map((data, index) => {
+                return `
+                <strong>Базовая станция ${index + 1}:</strong><br>
+                LAC: ${data.lac}<br>
+                CID: ${data.cid}<br>
+                Оператор: ${data.operator}<br>
+                Тип сети: ${data.network_type}<br>
+                Азимут: ${data.azimuth || "N/A"}<br>
+                БС: ${data.bs}<br>
+                <strong>Количество:</strong> ${data.repeatCount || 1}<br>
+                <button onclick="deleteBaseStation('${station.key}', ${index})">Х</button>`;
+            }).join("<hr>");
+
+            const popupContent = `
+                <strong>Базовые станции в данном месте:</strong><br>
+                ${stationData}
+                <strong>Всего сидов в БС:</strong> ${station.stations.length}<br>
+            `;
+
+            if (station.marker.getPopup()) {
+                station.marker.getPopup().setContent(popupContent);
+                if (station.marker.isPopupOpen()) {
+                    station.marker.openPopup();
+                }
+            } else {
+                station.marker.bindPopup(popupContent).openPopup();
+            }
+        }
+
+        // Function to delete a specific base station
+        function deleteBaseStation(stationKey, stationIndex) {
+            const station = addedStations[stationKey];
+            if (!station) {
+                alert("Station not found!");
+                return;
+            }
+
+            // Remove the specific station data
+            const removedStation = station.stations.splice(stationIndex, 1);
+
+            // Remove associated sector if needed
+            const sectorToRemove = station.sectors[stationIndex];
+            if (sectorToRemove) {
+                map.removeLayer(sectorToRemove);
+                station.sectors.splice(stationIndex, 1);
+            }
+
+            // If no stations are left, remove the marker and its sectors
+            if (station.stations.length === 0) {
+                map.removeLayer(station.marker);
+                station.sectors.forEach(sector => map.removeLayer(sector));
+                delete addedStations[stationKey];
+            } else {
+                // Update the popup if there are still stations
+                updateStationPopup(station);
+            }
+
+            console.log(`Deleted base station: ${removedStation[0]?.lac} ${removedStation[0]?.cid}`);
+        }
+
+        // Function to handle base station data and add/update marker
+        function handleBaseStationData(data) {
+            if (!data.latitude || !data.longitude) {
+                alert("Координаты базовой станции не найдены.");
+                return;
+            }
+
+            const lat = data.latitude;
+            const lon = data.longitude;
+            const stationKey = `${lat}_${lon}`;
+            data.stationKey = stationKey; // Attach the key to the data for reference
+
+            // Check if a marker already exists at these coordinates
+            if (addedStations[stationKey]) {
+                const existingStation = addedStations[stationKey];
+
+                // Check if this LAC/CID pair is already tracked
+                const isDuplicate = existingStation.stations.some(
+                    station => station.lac === data.lac && station.cid === data.cid
+                );
+
+                if (!isDuplicate) {
+                    existingStation.stations.push(data);
+                    drawAzimuthSector(data, existingStation.sectors, stationKey);
+                    updateStationPopup(existingStation);
+                } else {
+                    // Update repeat counts dynamically if data already exists
+                    const existingData = existingStation.stations.find(
+                        station => station.lac === data.lac && station.cid === data.cid
+                    );
+                    existingData.repeatCount += data.repeatCount || 1;
+                    updateStationPopup(existingStation);
+                }
+                return;
+            }
+
+            // Create a new marker and azimuth sector
+            const marker = L.marker([lat, lon]).addTo(map);
+
+            addedStations[stationKey] = {
+                key: stationKey,
+                marker,
+                sectors: [],
+                stations: [data],
+            };
+
+            drawAzimuthSector(data, addedStations[stationKey].sectors, stationKey);
+            updateStationPopup(addedStations[stationKey]);
+
+            // Add right-click event listener for deleting the entire marker
+            marker.on('contextmenu', function () {
+                if (confirm("Вы уверены, что хотите удалить все базовые станции в этой точке?")) {
+                    map.removeLayer(marker);
+                    addedStations[stationKey].sectors.forEach(sector => map.removeLayer(sector));
+                    delete addedStations[stationKey];
+                }
+            });
+        }
+
+        // Function to draw an azimuth sector
+        function drawAzimuthSector(data, sectors, stationKey) {
+            const lat = data.latitude;
+            const lon = data.longitude;
+            const azimuth = parseFloat(data.azimuth) || parseFloat(document.getElementById('azimuth').value) || 0;
+            const radius = parseFloat(document.getElementById('radius').value) || 2000; // Coverage radius
+            const sectorWidth = parseFloat(document.getElementById('sectorWidth').value) || 100; // Sector width
+            const sectorColor = data.sectorColor || document.getElementById('sectorColor').value || "#0000ff"; // Sector color
+
+            // Calculate points for the sector
+            const azimuthStart = azimuth - sectorWidth / 2;
+            const azimuthEnd = azimuth + sectorWidth / 2;
+            const points = [];
+
+            for (let angle = azimuthStart; angle <= azimuthEnd; angle++) {
+                const latOffset = lat + (radius / 111111) * Math.cos((angle * Math.PI) / 180);
+                const lonOffset = lon + (radius / (111111 * Math.cos((lat * Math.PI) / 180))) * Math.sin((angle * Math.PI) / 180);
+                points.push([latOffset, lonOffset]);
+            }
+
+            points.unshift([lat, lon]); // Center of the base station
+            const sectorPolygon = L.polygon(points, {
+                color: sectorColor,
+                fill: true,
+                fillOpacity: 0.4,
+            }).addTo(map);
+
+            // Add click event to open the marker's popup
+            sectorPolygon.on('click', () => {
+                if (addedStations[stationKey].marker.isPopupOpen()) {
+                    addedStations[stationKey].marker.closePopup();
+                }
+                addedStations[stationKey].marker.openPopup();
+            });
+
+            sectors.push(sectorPolygon);
+        }
+
+        document.getElementById('fileInput').addEventListener('change', async function () {
+            const fileInput = document.getElementById('fileInput');
+            const uploadStatus = document.getElementById('uploadStatus');
+
+            if (!fileInput.files.length) {
+                showMessage('Please select a file to upload.');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            try {
+                const response = await fetch('/upload-xlsx', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    showMessage(result.message || 'Файл з БС успішно завантажено.');
+                } else {
+                    showMessage(result.error || 'Помилка при завантаженні файла з БС.');
+                }
+            } catch (error) {
+                console.error('Error uploading file:', error);
+                showMessage('An error occurred during file upload.');
+            }
+        });
+
+        // Function to show a centered message on the screen
+        function showMessage(message) {
+            const messageBox = document.createElement('div');
+            messageBox.textContent = message;
+            messageBox.style.position = 'fixed';
+            messageBox.style.top = '50%';
+            messageBox.style.left = '50%';
+            messageBox.style.transform = 'translate(-50%, -50%)';
+            messageBox.style.backgroundColor = 'white';
+            messageBox.style.padding = '20px';
+            messageBox.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+            messageBox.style.border = '1px solid #ccc';
+            messageBox.style.zIndex = '1000';
+            document.body.appendChild(messageBox);
+
+            // Reset the file input value so the same file can be selected again
+            fileInput.value = '';
+
+            // Automatically remove the message after 3 seconds
+            setTimeout(() => {
+                document.body.removeChild(messageBox);
+            }, 3000);
+        }
+
+
+    </script>
+
+
+
+    <!-- DaysPedia Widget -->
+    <iframe width="300"
+            height="108"
+            style="padding:0!important; margin:0!important; border:none!important; background:none!important; background:transparent!important; position: fixed; top: 5px; right: 10px; z-index: 9999;"
+            marginheight="0"
+            marginwidth="0"
+            frameborder="0"
+            scrolling="no"
+            src="https://dayspedia.com/if/digit/?v=1&iframe=eyJ3LTEyIjpmYWxzZSwidy0xMSI6dHJ1ZSwidy0xMyI6dHJ1ZSwidy0xNCI6dHJ1ZSwidy0xNSI6dHJ1ZSwidy0xMTAiOmZhbHNlLCJ3LXdpZHRoLTAiOmZhbHNlLCJ3LXdpZHRoLTEiOmZhbHNlLCJ3LXdpZHRoLTIiOnRydWUsInctMTYiOiIwIDAgMjRweCIsInctMTkiOiIzMiIsInctMTciOiIxMiIsInctMjEiOnRydWUsImJnaW1hZ2UiOi0xLCJiZ2ltYWdlU2V0IjpmYWxzZSwidy0yMWMwIjoiI2ZmZmZmZiIsInctMCI6dHJ1ZSwidy0zIjp0cnVlLCJ3LTNjMCI6IiMzNDM0MzQiLCJ3LTNiMCI6IjEiLCJ3LTYiOiIjMzQzNDM0Iiwidy0yMCI6dHJ1ZSwidy00IjoiIzAwN2RiZiIsInctMTgiOmZhbHNlLCJ3LXdpZHRoLTJjLTAiOiIzMDAiLCJ3LTExNSI6dHJ1ZX0=&lang=ru&cityid=3477">
+    </iframe>
+    <!-- DaysPedia Widget ENDS -->
+
+
+</body>
+</html>
