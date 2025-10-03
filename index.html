@@ -1,71 +1,26 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Base Station Visualization (Offline)</title>
+    <title>Base Station Visualization (1.0)</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="js/leaflet-image.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
     <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
     <style>
-        * {
-            box-sizing: border-box;
-        }
         body {
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
+        }
+        html, body {
             overflow: hidden;
             height: 100%;
         }
-        #map {
-            height: 100vh;
-            width: 100%;
-        }
-        /* Форма параметров БС — левый нижний угол */
-        #bsParams {
-            position: fixed;
-            bottom: 10px;
-            left: 10px;
-            background: white;
-            padding: 12px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-            z-index: 1000;
-            max-width: 300px;
-            font-size: 14px;
-        }
-        #bsParams h4 {
-            margin-top: 0;
-            margin-bottom: 10px;
-        }
-        #bsParams label {
-            display: block;
-            margin-top: 6px;
-        }
-        #bsParams input {
-            width: 100%;
-            padding: 4px;
-            margin-top: 2px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-        #colorPalette {
-            display: flex;
-            gap: 6px;
-            margin-top: 6px;
-        }
-        .color-option {
-            width: 20px;
-            height: 20px;
-            border: none;
-            border-radius: 3px;
-            cursor: pointer;
-        }
-        /* Поиск адреса */
         #address-search {
             position: absolute;
             top: 10px;
@@ -77,12 +32,85 @@
             align-items: center;
         }
         #address-search input {
-            width: 300px;
+            width: 350px;
             padding: 8px;
             border: 1px solid #ccc;
             border-radius: 4px;
         }
-        /* Кнопки управления */
+        #address-search button {
+            padding: 8px 12px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        #address-search button:hover {
+            background-color: #0056b3;
+        }
+        #exportBtn {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 999;
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #exportBtn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        #map {
+            height: 90vh;
+            width: 100%;
+        }
+        /* Форма параметров БС — фиксирована в левом нижнем углу */
+        #bsParams {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            background: white;
+            padding: 16px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            width: 300px; /* Сохраняем оригинальный размер */
+            max-height: 60%;
+            box-sizing: border-box;
+            overflow: auto;
+        }
+        #bsParams h3 {
+            margin-top: 0;
+            margin-bottom: 12px;
+        }
+        #bsParams label {
+            display: block;
+            margin-top: 8px;
+        }
+        #bsParams input, #bsParams textarea {
+            width: 100%;
+            padding: 6px;
+            margin-top: 2px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        #colorPalette {
+            margin-top: 8px;
+        }
+        #colorPalette button {
+            width: 24px;
+            height: 24px;
+            padding: 0;
+            margin: 2px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
         #map-controls {
             position: fixed;
             bottom: 10px;
@@ -94,95 +122,83 @@
             max-width: 200px;
         }
         #map-controls button {
-            padding: 8px 12px;
-            background: #007bff;
+            padding: 10px 15px;
+            background-color: #007bff;
             color: white;
             border: none;
             border-radius: 4px;
             cursor: pointer;
             white-space: normal;
             text-align: center;
-            font-size: 13px;
+            font-size: 14px;
         }
         #map-controls button:hover {
-            background: #0056b3;
+            background-color: #0056b3;
         }
         #map-controls button#clearStations {
-            background: #dc3545;
+            background-color: #dc3545;
         }
         #map-controls button#clearStations:hover {
-            background: #a71d2a;
+            background-color: #a71d2a;
         }
-        /* Всплывающие окна измерений */
         #distancePopup, #areaPopup {
             position: fixed;
             top: 130px;
             right: 10px;
             z-index: 10000;
-            padding: 12px;
-            background: rgba(255,255,255,0.95);
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.95);
             border: 1px solid #ccc;
             border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
             font-size: 16px;
             font-weight: bold;
             text-align: center;
             width: 200px;
             display: none;
         }
-        /* Экспорт */
-        #exportBtn {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            z-index: 999;
-            padding: 8px 16px;
-            background: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        #exportBtn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
+        #areaPopup {
+            z-index: 9999;
+            display: none;
         }
     </style>
 </head>
 <body>
+    <h2>Base Station Visualization (1.0) by FobosNS</h2>
     <div id="map"></div>
+    <button id="exportBtn" onclick="exportMapAsPNG()" disabled>Export Map as PNG</button>
 
-    <button id="exportBtn" onclick="exportMapAsPNG()" disabled>Экспорт PNG</button>
-
-    <div id="address-search">
-        <input type="text" id="addressInput" placeholder="Поиск адреса (Украина)" />
-        <button onclick="searchAddressOnMap()">Найти</button>
-    </div>
-
-    <!-- Форма параметров БС — всегда видна -->
+    <!-- Форма параметров БС — всегда видна в левом нижнем углу -->
     <div id="bsParams">
-        <h4>Параметры БС</h4>
+        <h3>Параметры базовой станции</h3>
         <label>Азимут (°): <input type="number" id="azimuth" value="0"></label>
-        <label>Радиус (м): <input type="number" id="radius" value="2000"></label>
+        <label>Радиус покрытия (m): <input type="number" id="radius" value="2000"></label>
         <label>Ширина сектора (°): <input type="number" id="sectorWidth" value="100"></label>
-        <label>Цвет сектора:
-            <input type="color" id="sectorColor" value="#0000ff">
-        </label>
+        <label>Цвет сектора: <input type="color" id="sectorColor" value="#0000ff"></label>
         <div id="colorPalette">
-            <button type="button" class="color-option" data-color="#ff0000" style="background:#ff0000;"></button>
-            <button type="button" class="color-option" data-color="#00ff00" style="background:#00ff00;"></button>
-            <button type="button" class="color-option" data-color="#0000ff" style="background:#0000ff;"></button>
-            <button type="button" class="color-option" data-color="#ffff00" style="background:#ffff00;"></button>
-            <button type="button" class="color-option" data-color="#ff00ff" style="background:#ff00ff;"></button>
-            <button type="button" class="color-option" data-color="#00ffff" style="background:#00ffff;"></button>
-            <button type="button" class="color-option" data-color="#808080" style="background:#808080;"></button>
+            <button type="button" class="color-option" data-color="#ff0000" style="background-color: #ff0000;"></button>
+            <button type="button" class="color-option" data-color="#00ff00" style="background-color: #00ff00;"></button>
+            <button type="button" class="color-option" data-color="#0000ff" style="background-color: #0000ff;"></button>
+            <button type="button" class="color-option" data-color="#ffff00" style="background-color: #ffff00;"></button>
+            <button type="button" class="color-option" data-color="#ff00ff" style="background-color: #ff00ff;"></button>
+            <button type="button" class="color-option" data-color="#00ffff" style="background-color: #00ffff;"></button>
+            <button type="button" class="color-option" data-color="#808080" style="background-color: #808080;"></button>
         </div>
+        <br><br>
+        <button type="button" onclick="createBaseStation()">Создать базовую станцию</button>
     </div>
 
+    <!-- Поиск адреса -->
+    <div id="address-search">
+        <input type="text" id="addressInput" placeholder="Введите адрес">
+        <button id="searchButton" onclick="searchAddressOnMap()">Найти</button>
+    </div>
+
+    <!-- Кнопки управления -->
     <div id="map-controls">
-        <button id="clearStations">Очистить всё</button>
+        <button id="clearStations">Очистить все БС</button>
         <button id="measureDistance">Измерить расстояние</button>
-        <button id="drawRoute">Маршрут</button>
+        <button id="drawRoute">Начать рисование маршрута</button>
         <button id="measureArea">Измерить площадь</button>
     </div>
 
@@ -190,11 +206,11 @@
     <div id="areaPopup">Площадь: 0.00 км²</div>
 
     <script>
-        // === Инициализация карты ===
-        const map = L.map('map').setView([50.4501, 30.5234], 13); // Киев
+        // === ЕДИНСТВЕННАЯ инициализация карты ===
+        const map = L.map('map').setView([50.4501, 30.5234], 13);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
-            attribution: '© OpenStreetMap'
+            attribution: '© OpenStreetMap contributors'
         }).addTo(map);
 
         // === Глобальные переменные ===
@@ -253,7 +269,6 @@
             temporaryPolygon = L.polygon(points, { color: 'orange', fillOpacity: 0.3 }).addTo(map);
         }
 
-        // === Создание постоянной БС ===
         function createBaseStation() {
             if (temporaryMarker === null) {
                 alert("Сначала кликните правой кнопкой по карте, чтобы выбрать место БС.");
@@ -265,7 +280,7 @@
             const sectorWidth = parseFloat(document.getElementById('sectorWidth').value) || 100;
             const color = document.getElementById('sectorColor').value || '#0000ff';
 
-            const marker = L.marker([currentLat, currentLon]).addTo(map).bindPopup("Базовая станция");
+            const marker = L.marker([currentLat, currentLon]).addTo(map).bindPopup("Base Station").openPopup();
             baseStationMarkers.push(marker);
 
             const start = azimuth - sectorWidth / 2;
@@ -284,12 +299,13 @@
             temporaryMarker = null;
             temporaryPolygon = null;
 
-            marker.on('contextmenu', () => {
-                if (confirm("Удалить эту БС?")) {
+            marker.on('contextmenu', function() {
+                if (confirm("Вы уверены, что хотите удалить эту базовую станцию?")) {
                     map.removeLayer(marker);
                     map.removeLayer(polygon);
                     baseStationMarkers = baseStationMarkers.filter(m => m !== marker);
                     sectorPolygons = sectorPolygons.filter(p => p !== polygon);
+                    alert("Базовая станция удалена с карты!");
                 }
             });
         }
@@ -297,29 +313,30 @@
         // === Поиск адреса ===
         async function searchAddressOnMap() {
             const address = document.getElementById('addressInput').value.trim();
-            if (!address) return alert('Введите адрес');
+            if (!address) return alert('Пожалуйста, введите адрес!');
             try {
                 const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&countrycodes=ua&limit=1`);
                 const data = await res.json();
-                if (!data.length) return alert('Адрес не найден');
+                if (!data.length) return alert('Адрес не найден. Уточните запрос.');
                 const { lat, lon, display_name } = data[0];
-                L.marker([lat, lon]).addTo(map).bindPopup(display_name).openPopup();
+                L.marker([lat, lon]).addTo(map).bindPopup(`Адрес: ${display_name}`).openPopup();
                 map.setView([lat, lon], 15);
             } catch (e) {
-                alert('Ошибка поиска');
+                alert('Ошибка выполнения поиска.');
             }
         }
 
         // === Измерение расстояния ===
         document.getElementById('measureDistance').addEventListener('click', () => {
             isMeasuring = !isMeasuring;
-            document.getElementById('measureDistance').textContent = isMeasuring ? 'Остановить измерение' : 'Измерить расстояние';
             if (isMeasuring) {
+                alert('Режим измерения включен. Правый клик на карту, чтобы добавить или удалить точки.');
                 resetMeasure();
+                document.getElementById('measureDistance').textContent = 'Остановить измерение';
                 document.getElementById('distancePopup').style.display = 'block';
-                alert('Режим измерения включён. Правый клик — добавить/удалить точку.');
             } else {
                 resetMeasure();
+                document.getElementById('measureDistance').textContent = 'Измерить расстояние';
                 document.getElementById('distancePopup').style.display = 'none';
             }
         });
@@ -369,9 +386,13 @@
         // === Маршрут ===
         document.getElementById('drawRoute').addEventListener('click', () => {
             isRouting = !isRouting;
-            document.getElementById('drawRoute').textContent = isRouting ? 'Остановить маршрут' : 'Маршрут';
-            if (!isRouting) clearRoute();
-            else alert('Режим маршрута включён. Клик — добавить точку. Правый клик по точке — удалить.');
+            if (isRouting) {
+                alert('Режим маршрута включен. Клик — добавить точку. Правый клик по точке — удалить.');
+                document.getElementById('drawRoute').textContent = 'Остановить рисование маршрута';
+            } else {
+                clearRoute();
+                document.getElementById('drawRoute').textContent = 'Начать рисование маршрута';
+            }
         });
 
         map.on('click', async e => {
@@ -380,7 +401,7 @@
             routeMarkers.push(marker);
             marker.on('dragend', updateRoute);
             marker.on('contextmenu', () => {
-                if (confirm("Удалить точку маршрута?")) {
+                if (confirm('Удалить точку маршрута?')) {
                     map.removeLayer(marker);
                     routeMarkers = routeMarkers.filter(m => m !== marker);
                     updateRoute();
@@ -400,10 +421,10 @@
                 const data = await res.json();
                 if (data.routes?.[0]) {
                     if (routeLayer) map.removeLayer(routeLayer);
-                    routeLayer = L.geoJSON(data.routes[0].geometry, { style: { color: 'blue', weight: 6 } }).addTo(map);
+                    routeLayer = L.geoJSON(data.routes[0].geometry, { style: { color: 'blue', weight: 8 } }).addTo(map);
                 }
             } catch (e) {
-                console.error(e);
+                alert('Ошибка построения маршрута.');
             }
         }
 
@@ -417,13 +438,13 @@
         // === Измерение площади ===
         document.getElementById('measureArea').addEventListener('click', () => {
             isMeasuringArea = !isMeasuringArea;
-            document.getElementById('measureArea').textContent = isMeasuringArea ? 'Остановить площадь' : 'Измерить площадь';
             if (isMeasuringArea) {
-                finalizeAreaMeasurement();
+                alert('Режим измерения площади включен. Клик — добавить точку.');
+                document.getElementById('measureArea').textContent = 'Остановить измерение площади';
                 document.getElementById('areaPopup').style.display = 'block';
-                alert('Режим измерения площади включён. Клик — добавить точку.');
             } else {
                 finalizeAreaMeasurement();
+                document.getElementById('measureArea').textContent = 'Измерить площадь';
                 document.getElementById('areaPopup').style.display = 'none';
             }
         });
@@ -434,7 +455,7 @@
             areaMarkers.push(marker);
             marker.on('drag', updateAreaMeasurement);
             marker.on('contextmenu', () => {
-                if (confirm("Удалить точку площади?")) {
+                if (confirm('Удалить точку площади?')) {
                     map.removeLayer(marker);
                     areaMarkers = areaMarkers.filter(m => m !== marker);
                     updateAreaMeasurement();
@@ -463,6 +484,7 @@
             if (areaPolygon) map.removeLayer(areaPolygon);
             areaMarkers = [];
             areaPolygon = null;
+            document.getElementById('areaPopup').textContent = 'Площадь: 0.00 км²';
         }
 
         // === Очистка всего ===
@@ -482,9 +504,23 @@
             document.getElementById('areaPopup').style.display = 'none';
         });
 
-        // === Экспорт ===
+        // === Экспорт PNG ===
         function exportMapAsPNG() {
-            alert('Экспорт PNG требует подключения leaflet-image.js (не включён в этот файл).');
+            if (typeof leafletImage !== 'function') {
+                alert('Библиотека leaflet-image.js не загружена. Экспорт недоступен.');
+                return;
+            }
+            leafletImage(map, function(err, canvas) {
+                if (err) {
+                    console.error(err);
+                    alert('Ошибка экспорта карты.');
+                    return;
+                }
+                const link = document.createElement('a');
+                link.href = canvas.toDataURL('image/png');
+                link.download = 'map.png';
+                link.click();
+            });
         }
 
         // === Цвета ===
@@ -494,17 +530,21 @@
             });
         });
 
-        // === Горячая клавиша для создания БС (Enter в форме) ===
-        document.addEventListener('keydown', e => {
-            if (e.key === 'Enter' && (e.target.tagName !== 'TEXTAREA')) {
-                createBaseStation();
-            }
-        });
-
-        // === Готовность карты ===
+        // === Активация кнопки экспорта ===
         map.whenReady(() => {
-            document.getElementById('exportBtn').disabled = true;
+            document.getElementById('exportBtn').disabled = false;
         });
     </script>
+
+    <!-- DaysPedia Widget -->
+    <iframe width="300"
+            height="108"
+            style="padding:0!important; margin:0!important; border:none!important; background:none!important; background:transparent!important; position: fixed; top: 5px; right: 10px; z-index: 9999;"
+            marginheight="0"
+            marginwidth="0"
+            frameborder="0"
+            scrolling="no"
+            src="https://dayspedia.com/if/digit/?v=1&iframe=eyJ3LTEyIjpmYWxzZSwidy0xMSI6dHJ1ZSwidy0xMyI6dHJ1ZSwidy0xNCI6dHJ1ZSwidy0xNSI6dHJ1ZSwidy0xMTAiOmZhbHNlLCJ3LXdpZHRoLTAiOmZhbHNlLCJ3LXdpZHRoLTEiOmZhbHNlLCJ3LXdpZHRoLTIiOnRydWUsInctMTYiOiIwIDAgMjRweCIsInctMTkiOiIzMiIsInctMTciOiIxMiIsInctMjEiOnRydWUsImJnaW1hZ2UiOi0xLCJiZ2ltYWdlU2V0IjpmYWxzZSwidy0yMWMwIjoiI2ZmZmZmZiIsInctMCI6dHJ1ZSwidy0zIjp0cnVlLCJ3LTNjMCI6IiMzNDM0MzQiLCJ3LTNiMCI6IjEiLCJ3LTYiOiIjMzQzNDM0Iiwidy0yMCI6dHJ1ZSwidy00IjoiIzAwN2RiZiIsInctMTgiOmZhbHNlLCJ3LXdpZHRoLTJjLTAiOiIzMDAiLCJ3LTExNSI6dHJ1ZX0=&lang=ru&cityid=3477">
+    </iframe>
 </body>
 </html>
