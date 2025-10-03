@@ -27,7 +27,16 @@
             height: 100%; /* Высота на 100% окна */
         }
 
-        #address-search { position: absolute; top: 70px; left: 50%; transform: translateX(-50%); z-index: 1000; display: flex; gap: 8px; align-items: center; }
+        #address-search {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
 
             #address-search input {
                 width: 350px;
@@ -97,9 +106,21 @@
                 cursor: not-allowed;
             }
 
-        #map { height: 100vh; width: 100%; }
+        #map {
+            height: 90vh; /* Увеличиваем карту до 70% высоты экрана */
+            width: 100%;
+        }
 
-        #popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 500px; max-height: 80%; background: white; padding: 20px; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0px 4px 10px rgba(0,0,0,0.3); z-index: 3000; display: none; overflow-y: auto; }
+        #popup {
+            position: absolute;
+            background: white;
+            max-width: 90%;
+            margin: auto;
+            padding: 5%;
+            border: 1px solid #ccc;
+            display: none;
+            z-index: 1000;
+        }
 
         button {
             font-size: 1rem;
@@ -115,15 +136,40 @@
             border-bottom-color: #FFC107;
         }
 
-        #popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 500px; max-height: 80%; background: white; padding: 20px; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0px 4px 10px rgba(0,0,0,0.3); z-index: 3000; display: none; overflow-y: auto; }
+        #popup {
+            position: fixed; /* Позиционирование для размещения поверх других элементов */
+            top: 70%; /* Центрирование по вертикали */
+            left: 10%; /* Центрирование по горизонтали */
+            transform: translate(-50%, -55%); /* Сдвиг для точного центрирования */
+            width: 90%; /* Ширина по умолчанию — 90% от ширины экрана */
+            max-width: 400px; /* Максимальная ширина для больших экранов */
+            max-height: 60%;
+            background-color: white; /* Цвет фона */
+            padding: 16px; /* Внутренние отступы */
+            border: 1px solid #ccc; /* Рамка */
+            border-radius: 8px; /* Закругленные углы */
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2); /* Тень для блока */
+            z-index: 1000; /* Отображение поверх других элементов */
+            box-sizing: border-box; /* Учитывать отступы внутри ширины */
+            display: block; /* Скрыть по умолчанию */
+            overflow: auto;
+        }
 
         /* Media query для маленьких экранов */
         @media (max-width: 768px) {
-            #popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 500px; max-height: 80%; background: white; padding: 20px; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0px 4px 10px rgba(0,0,0,0.3); z-index: 3000; display: none; overflow-y: auto; }
+            #popup {
+                width: 95%; /* Увеличиваем ширину для маленьких экранов */
+                max-width: none; /* Убираем ограничение по ширине */
+                top: 55%; /* Сдвигаем чуть ниже для удобства */
+                padding: 12px; /* Уменьшаем отступы */
+            }
         }
 
         @media (max-width: 480px) {
-            #popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 500px; max-height: 80%; background: white; padding: 20px; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0px 4px 10px rgba(0,0,0,0.3); z-index: 3000; display: none; overflow-y: auto; }
+            #popup {
+                width: 100%; /* Блок занимает всю ширину экрана */
+                padding: 8px; /* Еще меньше отступы */
+            }
         }
 
         #tw_8_1653716743 {
@@ -276,19 +322,26 @@
 
 <body>
 
-    <header style="position:fixed;top:0;left:0;width:100%;background:#007bff;color:white;text-align:center;padding:10px;z-index:2000;box-shadow:0 2px 6px rgba(0,0,0,0.2);">Base Station Visualization (1.0) by FobosNS</header>
+    <h2>Base Station Visualization (1.0) by FobosNS</h2>
 
-    <div id="map" style="margin-top:50px;"></div>
+    <div id="map"></div>
     <button id="exportBtn" onclick="exportMapAsPNG()" disabled>Export Map as PNG</button>
 
     <div id="popup">
         <h3>Введите параметры базовой станции</h3>
         <form id="baseStationForm">
             <!-- Поля поиска базовой станции -->
-            
+            <label for="lacCidInput">LAC CID (разделитель: пробел, табуляция, можно в столбик):</label><br>
+            <textarea id="lacCidInput" placeholder="Введите LAC и CID" rows="5" style="width: 100%;"></textarea><br><br>
+
+            <button type="button" onclick="searchBaseStation()">Search Base Station</button>
+            <hr>
 
             <!-- Поля для поиска по адресу -->
-            
+            <label for="bsAddressInput">Поиск базовой станции по адресу:</label><br>
+            <input type="text" id="bsAddressInput" placeholder="Введите адрес" style="width: 100%;"><br><br>
+            <button type="button" onclick="searchBaseStationByAddress()">Search by Address</button>
+            <hr>
 
             <!-- Поля для ввода параметров базовой станции -->
             <label for="azimuth">Азимут (°): </label>
@@ -329,12 +382,17 @@
 
 
     <!-- File Upload Section -->
-    
+    <form id="uploadForm" enctype="multipart/form-data">
+        <input type="file" id="fileInput" name="file" style="display: none;" />
+        <button type="button" id="uploadButton" onclick="document.getElementById('fileInput').click()">Загрузить список БС в БД</button>
+        <div id="uploadStatus" style="margin-top: 10px; font-size: 14px; color: #555;"></div>
+    </form>
 
-    
+    <div id="map-container" style="position: relative;">
+        <div id="map" style="height: 500px; width: 100%;"></div>
     </div>
     <div id="map-controls">
-        
+        <button id="showStations">Показать базовые станции внутри границы карты</button>
         <button id="clearStations">Очистить все БС</button>
         <button id="measureDistance">Измерить расстояние</button>
         <button id="drawRoute">Начать рисование маршрута</button>
