@@ -24,44 +24,48 @@
             height: 100vh;
             width: 100%;
         }
-        #popup {
+        /* Форма параметров БС — левый нижний угол */
+        #bsParams {
             position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 90%;
-            max-width: 400px;
+            bottom: 10px;
+            left: 10px;
             background: white;
-            padding: 16px;
+            padding: 12px;
             border: 1px solid #ccc;
             border-radius: 8px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.2);
             z-index: 1000;
-            display: none;
-            overflow: auto;
+            max-width: 300px;
+            font-size: 14px;
         }
-        #popup h3 {
+        #bsParams h4 {
             margin-top: 0;
+            margin-bottom: 10px;
         }
-        #popup input, #popup textarea {
+        #bsParams label {
+            display: block;
+            margin-top: 6px;
+        }
+        #bsParams input {
             width: 100%;
-            padding: 6px;
-            margin: 4px 0 12px;
+            padding: 4px;
+            margin-top: 2px;
             border: 1px solid #ccc;
             border-radius: 4px;
         }
-        #popup button {
-            margin: 4px;
-            padding: 8px 12px;
-            background: #007bff;
-            color: white;
+        #colorPalette {
+            display: flex;
+            gap: 6px;
+            margin-top: 6px;
+        }
+        .color-option {
+            width: 20px;
+            height: 20px;
             border: none;
-            border-radius: 4px;
+            border-radius: 3px;
             cursor: pointer;
         }
-        #popup button:hover {
-            background: #0056b3;
-        }
+        /* Поиск адреса */
         #address-search {
             position: absolute;
             top: 10px;
@@ -78,34 +82,16 @@
             border: 1px solid #ccc;
             border-radius: 4px;
         }
-        #exportBtn {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            z-index: 999;
-            padding: 8px 16px;
-            background: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        #exportBtn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-        }
+        /* Кнопки управления */
         #map-controls {
             position: fixed;
             bottom: 10px;
-            left: 50%;
-            transform: translateX(-50%);
+            right: 10px;
             z-index: 1000;
             display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
+            flex-direction: column;
             gap: 8px;
-            padding: 10px;
-            max-width: 100%;
+            max-width: 200px;
         }
         #map-controls button {
             padding: 8px 12px;
@@ -116,9 +102,7 @@
             cursor: pointer;
             white-space: normal;
             text-align: center;
-            min-width: 120px;
-            max-width: 200px;
-            flex: 1 1 auto;
+            font-size: 13px;
         }
         #map-controls button:hover {
             background: #0056b3;
@@ -129,6 +113,7 @@
         #map-controls button#clearStations:hover {
             background: #a71d2a;
         }
+        /* Всплывающие окна измерений */
         #distancePopup, #areaPopup {
             position: fixed;
             top: 130px;
@@ -145,30 +130,22 @@
             width: 200px;
             display: none;
         }
-        #colorPalette {
-            display: flex;
-            gap: 6px;
-            margin-top: 6px;
-        }
-        .color-option {
-            width: 24px;
-            height: 24px;
+        /* Экспорт */
+        #exportBtn {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 999;
+            padding: 8px 16px;
+            background: #007bff;
+            color: white;
             border: none;
-            border-radius: 4px;
+            border-radius: 5px;
             cursor: pointer;
         }
-        @media (max-width: 768px) {
-            #map-controls {
-                flex-direction: column;
-                gap: 6px;
-            }
-            #map-controls button {
-                max-width: 90%;
-                padding: 6px;
-            }
-            #address-search input {
-                width: 200px;
-            }
+        #exportBtn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
         }
     </style>
 </head>
@@ -182,30 +159,24 @@
         <button onclick="searchAddressOnMap()">Найти</button>
     </div>
 
-    <div id="popup">
-        <h3>Параметры базовой станции</h3>
-        <form id="baseStationForm">
-            <label>Азимут (°):</label>
-            <input type="number" id="azimuth" value="0" />
-            <label>Радиус покрытия (м):</label>
-            <input type="number" id="radius" value="2000" />
-            <label>Ширина сектора (°):</label>
-            <input type="number" id="sectorWidth" value="100" />
-            <label>Цвет сектора:</label>
-            <input type="color" id="sectorColor" value="#0000ff" />
-            <div id="colorPalette">
-                <button type="button" class="color-option" data-color="#ff0000" style="background:#ff0000;"></button>
-                <button type="button" class="color-option" data-color="#00ff00" style="background:#00ff00;"></button>
-                <button type="button" class="color-option" data-color="#0000ff" style="background:#0000ff;"></button>
-                <button type="button" class="color-option" data-color="#ffff00" style="background:#ffff00;"></button>
-                <button type="button" class="color-option" data-color="#ff00ff" style="background:#ff00ff;"></button>
-                <button type="button" class="color-option" data-color="#00ffff" style="background:#00ffff;"></button>
-                <button type="button" class="color-option" data-color="#808080" style="background:#808080;"></button>
-            </div>
-            <br><br>
-            <button type="button" onclick="createBaseStation()">Создать</button>
-            <button type="button" onclick="closePopup()">Отмена</button>
-        </form>
+    <!-- Форма параметров БС — всегда видна -->
+    <div id="bsParams">
+        <h4>Параметры БС</h4>
+        <label>Азимут (°): <input type="number" id="azimuth" value="0"></label>
+        <label>Радиус (м): <input type="number" id="radius" value="2000"></label>
+        <label>Ширина сектора (°): <input type="number" id="sectorWidth" value="100"></label>
+        <label>Цвет сектора:
+            <input type="color" id="sectorColor" value="#0000ff">
+        </label>
+        <div id="colorPalette">
+            <button type="button" class="color-option" data-color="#ff0000" style="background:#ff0000;"></button>
+            <button type="button" class="color-option" data-color="#00ff00" style="background:#00ff00;"></button>
+            <button type="button" class="color-option" data-color="#0000ff" style="background:#0000ff;"></button>
+            <button type="button" class="color-option" data-color="#ffff00" style="background:#ffff00;"></button>
+            <button type="button" class="color-option" data-color="#ff00ff" style="background:#ff00ff;"></button>
+            <button type="button" class="color-option" data-color="#00ffff" style="background:#00ffff;"></button>
+            <button type="button" class="color-option" data-color="#808080" style="background:#808080;"></button>
+        </div>
     </div>
 
     <div id="map-controls">
@@ -246,17 +217,23 @@
         let areaMarkers = [];
         let areaPolygon = null;
 
-        const addedStations = {}; // для предотвращения дублей при ручном создании
-
         // === Вспомогательные функции ===
         Math.radians = deg => deg * Math.PI / 180;
 
-        function closePopup() {
-            document.getElementById('popup').style.display = 'none';
-        }
+        // === Создание БС по правому клику ===
+        map.on('contextmenu', function(e) {
+            if (isMeasuring || isMeasuringArea) return;
+            currentLat = e.latlng.lat;
+            currentLon = e.latlng.lng;
 
-        function updateSector() {
-            if (!currentLat || !currentLon) return;
+            if (temporaryMarker) map.removeLayer(temporaryMarker);
+            if (temporaryPolygon) map.removeLayer(temporaryPolygon);
+
+            temporaryMarker = L.marker([currentLat, currentLon]).addTo(map).bindPopup("Предварительная БС").openPopup();
+            updateSectorPreview();
+        });
+
+        function updateSectorPreview() {
             const azimuth = parseFloat(document.getElementById('azimuth').value) || 0;
             const radius = parseFloat(document.getElementById('radius').value) || 2000;
             const sectorWidth = parseFloat(document.getElementById('sectorWidth').value) || 100;
@@ -276,19 +253,13 @@
             temporaryPolygon = L.polygon(points, { color: 'orange', fillOpacity: 0.3 }).addTo(map);
         }
 
-        // === Создание БС ===
-        map.on('contextmenu', function(e) {
-            if (isMeasuring || isMeasuringArea) return;
-            currentLat = e.latlng.lat;
-            currentLon = e.latlng.lng;
-            document.getElementById('popup').style.display = 'block';
-            if (temporaryMarker) map.removeLayer(temporaryMarker);
-            if (temporaryPolygon) map.removeLayer(temporaryPolygon);
-            temporaryMarker = L.marker([currentLat, currentLon]).addTo(map).bindPopup("Предварительная БС").openPopup();
-            updateSector();
-        });
-
+        // === Создание постоянной БС ===
         function createBaseStation() {
+            if (temporaryMarker === null) {
+                alert("Сначала кликните правой кнопкой по карте, чтобы выбрать место БС.");
+                return;
+            }
+
             const azimuth = parseFloat(document.getElementById('azimuth').value) || 0;
             const radius = parseFloat(document.getElementById('radius').value) || 2000;
             const sectorWidth = parseFloat(document.getElementById('sectorWidth').value) || 100;
@@ -321,8 +292,6 @@
                     sectorPolygons = sectorPolygons.filter(p => p !== polygon);
                 }
             });
-
-            closePopup();
         }
 
         // === Поиск адреса ===
@@ -348,6 +317,7 @@
             if (isMeasuring) {
                 resetMeasure();
                 document.getElementById('distancePopup').style.display = 'block';
+                alert('Режим измерения включён. Правый клик — добавить/удалить точку.');
             } else {
                 resetMeasure();
                 document.getElementById('distancePopup').style.display = 'none';
@@ -361,7 +331,7 @@
             measureMarkers.push(marker);
             marker.on('drag', updateMeasurement);
             marker.on('contextmenu', () => {
-                if (confirm("Удалить точку?")) {
+                if (confirm("Удалить точку измерения?")) {
                     map.removeLayer(marker);
                     measureMarkers = measureMarkers.filter(m => m !== marker);
                     updateMeasurement();
@@ -401,6 +371,7 @@
             isRouting = !isRouting;
             document.getElementById('drawRoute').textContent = isRouting ? 'Остановить маршрут' : 'Маршрут';
             if (!isRouting) clearRoute();
+            else alert('Режим маршрута включён. Клик — добавить точку. Правый клик по точке — удалить.');
         });
 
         map.on('click', async e => {
@@ -450,6 +421,7 @@
             if (isMeasuringArea) {
                 finalizeAreaMeasurement();
                 document.getElementById('areaPopup').style.display = 'block';
+                alert('Режим измерения площади включён. Клик — добавить точку.');
             } else {
                 finalizeAreaMeasurement();
                 document.getElementById('areaPopup').style.display = 'none';
@@ -495,6 +467,7 @@
 
         // === Очистка всего ===
         document.getElementById('clearStations').addEventListener('click', () => {
+            if (!confirm("Очистить всё с карты?")) return;
             map.eachLayer(layer => {
                 if (!layer._url) map.removeLayer(layer);
             });
@@ -503,14 +476,15 @@
             measureMarkers = [];
             routeMarkers = [];
             areaMarkers = [];
-            addedStations = {};
+            temporaryMarker = null;
+            temporaryPolygon = null;
             document.getElementById('distancePopup').style.display = 'none';
             document.getElementById('areaPopup').style.display = 'none';
         });
 
-        // === Экспорт карты ===
+        // === Экспорт ===
         function exportMapAsPNG() {
-            alert('Экспорт требует подключения leaflet-image.js (не включён в этот файл).');
+            alert('Экспорт PNG требует подключения leaflet-image.js (не включён в этот файл).');
         }
 
         // === Цвета ===
@@ -520,9 +494,16 @@
             });
         });
 
+        // === Горячая клавиша для создания БС (Enter в форме) ===
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Enter' && (e.target.tagName !== 'TEXTAREA')) {
+                createBaseStation();
+            }
+        });
+
         // === Готовность карты ===
         map.whenReady(() => {
-            document.getElementById('exportBtn').disabled = true; // отключено без leaflet-image
+            document.getElementById('exportBtn').disabled = true;
         });
     </script>
 </body>
