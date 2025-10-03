@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -106,10 +106,7 @@
                 cursor: not-allowed;
             }
 
-        #map {
-            height: 90vh; /* Увеличиваем карту до 70% высоты экрана */
-            width: 100%;
-        }
+        #map { height: 100vh; width: 100%; }
 
         #popup {
             position: absolute;
@@ -322,26 +319,19 @@
 
 <body>
 
-    <h2>Base Station Visualization (1.0) by FobosNS</h2>
+    <header style="position:fixed;top:0;left:0;width:100%;background:#007bff;color:white;text-align:center;padding:10px;z-index:2000;box-shadow:0 2px 6px rgba(0,0,0,0.2);">Base Station Visualization (1.0) by FobosNS</header>
 
-    <div id="map"></div>
+    <div id="map" style="margin-top:50px;"></div>
     <button id="exportBtn" onclick="exportMapAsPNG()" disabled>Export Map as PNG</button>
 
     <div id="popup">
         <h3>Введите параметры базовой станции</h3>
         <form id="baseStationForm">
             <!-- Поля поиска базовой станции -->
-            <label for="lacCidInput">LAC CID (разделитель: пробел, табуляция, можно в столбик):</label><br>
-            <textarea id="lacCidInput" placeholder="Введите LAC и CID" rows="5" style="width: 100%;"></textarea><br><br>
-
-            <button type="button" onclick="searchBaseStation()">Search Base Station</button>
-            <hr>
+            
 
             <!-- Поля для поиска по адресу -->
-            <label for="bsAddressInput">Поиск базовой станции по адресу:</label><br>
-            <input type="text" id="bsAddressInput" placeholder="Введите адрес" style="width: 100%;"><br><br>
-            <button type="button" onclick="searchBaseStationByAddress()">Search by Address</button>
-            <hr>
+            
 
             <!-- Поля для ввода параметров базовой станции -->
             <label for="azimuth">Азимут (°): </label>
@@ -382,17 +372,12 @@
 
 
     <!-- File Upload Section -->
-    <form id="uploadForm" enctype="multipart/form-data">
-        <input type="file" id="fileInput" name="file" style="display: none;" />
-        <button type="button" id="uploadButton" onclick="document.getElementById('fileInput').click()">Загрузить список БС в БД</button>
-        <div id="uploadStatus" style="margin-top: 10px; font-size: 14px; color: #555;"></div>
-    </form>
+    
 
-    <div id="map-container" style="position: relative;">
-        <div id="map" style="height: 500px; width: 100%;"></div>
+    
     </div>
     <div id="map-controls">
-        <button id="showStations">Показать базовые станции внутри границы карты</button>
+        
         <button id="clearStations">Очистить все БС</button>
         <button id="measureDistance">Измерить расстояние</button>
         <button id="drawRoute">Начать рисование маршрута</button>
