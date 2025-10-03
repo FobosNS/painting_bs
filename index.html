@@ -27,16 +27,7 @@
             height: 100%; /* Высота на 100% окна */
         }
 
-        #address-search {
-            position: absolute;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1000;
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
+        #address-search { position: absolute; top: 70px; left: 50%; transform: translateX(-50%); z-index: 1000; display: flex; gap: 8px; align-items: center; }
 
             #address-search input {
                 width: 350px;
@@ -108,16 +99,7 @@
 
         #map { height: 100vh; width: 100%; }
 
-        #popup {
-            position: absolute;
-            background: white;
-            max-width: 90%;
-            margin: auto;
-            padding: 5%;
-            border: 1px solid #ccc;
-            display: none;
-            z-index: 1000;
-        }
+        #popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 500px; max-height: 80%; background: white; padding: 20px; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0px 4px 10px rgba(0,0,0,0.3); z-index: 3000; display: none; overflow-y: auto; }
 
         button {
             font-size: 1rem;
@@ -133,40 +115,15 @@
             border-bottom-color: #FFC107;
         }
 
-        #popup {
-            position: fixed; /* Позиционирование для размещения поверх других элементов */
-            top: 70%; /* Центрирование по вертикали */
-            left: 10%; /* Центрирование по горизонтали */
-            transform: translate(-50%, -55%); /* Сдвиг для точного центрирования */
-            width: 90%; /* Ширина по умолчанию — 90% от ширины экрана */
-            max-width: 400px; /* Максимальная ширина для больших экранов */
-            max-height: 60%;
-            background-color: white; /* Цвет фона */
-            padding: 16px; /* Внутренние отступы */
-            border: 1px solid #ccc; /* Рамка */
-            border-radius: 8px; /* Закругленные углы */
-            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2); /* Тень для блока */
-            z-index: 1000; /* Отображение поверх других элементов */
-            box-sizing: border-box; /* Учитывать отступы внутри ширины */
-            display: block; /* Скрыть по умолчанию */
-            overflow: auto;
-        }
+        #popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 500px; max-height: 80%; background: white; padding: 20px; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0px 4px 10px rgba(0,0,0,0.3); z-index: 3000; display: none; overflow-y: auto; }
 
         /* Media query для маленьких экранов */
         @media (max-width: 768px) {
-            #popup {
-                width: 95%; /* Увеличиваем ширину для маленьких экранов */
-                max-width: none; /* Убираем ограничение по ширине */
-                top: 55%; /* Сдвигаем чуть ниже для удобства */
-                padding: 12px; /* Уменьшаем отступы */
-            }
+            #popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 500px; max-height: 80%; background: white; padding: 20px; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0px 4px 10px rgba(0,0,0,0.3); z-index: 3000; display: none; overflow-y: auto; }
         }
 
         @media (max-width: 480px) {
-            #popup {
-                width: 100%; /* Блок занимает всю ширину экрана */
-                padding: 8px; /* Еще меньше отступы */
-            }
+            #popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 500px; max-height: 80%; background: white; padding: 20px; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0px 4px 10px rgba(0,0,0,0.3); z-index: 3000; display: none; overflow-y: auto; }
         }
 
         #tw_8_1653716743 {
